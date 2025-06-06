@@ -277,15 +277,6 @@ function Main() {
 
   }, [swapCallParams, walletClient, account.address])
 
-  // const checkBalance = useCallback(async () => {
-  //   const balance = await viemChainClient.getBalance({
-  //     address: account.address,
-  //   })
-  //   console.log({balance})
-  //   ERC20Token.
-  //   // swapTo.
-  // }, [account.address])
-
   return (
     <div className="App">
       <header className="App-header">
