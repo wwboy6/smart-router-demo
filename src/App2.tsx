@@ -20,24 +20,15 @@ import { GraphQLClient } from 'graphql-request'
 
 import Big from 'big.js'
 
+import './App.css'
 import { PRIVATE_KEY } from './secret'
 
-import './App.css'
-
 const chainId = ChainId.BSC
-
-const swapMission = {
-  swapFrom: Native.onChain(chainId),
-  swapFromAmount: 10n ** 18n,
-  swapTo: bscTokens.usdt,
-}
-// const swapMission = {
-//   swapFrom: bscTokens.usdt,
-//   swapFromAmount: 641708056667369017221n,
-//   swapTo: Native.onChain(chainId),
-// }
-const { swapFrom, swapFromAmount, swapTo } = swapMission
-
+const swapFrom = Native.onChain(chainId)
+// const swapFrom = bscTokens.cake
+const swapTo = bscTokens.usdt
+// const swapTo = bscTokens.cake
+// const swapTo = bscTokens.ace
 const queryClient = new QueryClient()
 
 // TODO:
@@ -156,7 +147,8 @@ function Main() {
   const { sendTransactionAsync } = useSendTransaction()
 
   const [trade, setTrade] = useState<SmartRouterTrade<TradeType> | null>(null)
-  const amount = useMemo(() => CurrencyAmount.fromRawAmount(swapFrom, swapFromAmount), [])
+  const [trade2, setTrade2] = useState<SmartRouterTrade<TradeType> | null>(null)
+  const amount = useMemo(() => CurrencyAmount.fromRawAmount(swapFrom, 10 ** 18), [])
   const getBestRoute = useCallback(async () => {
     const [v2Pools, v3Pools] = await Promise.all([
       SmartRouter.getV2CandidatePools({
@@ -187,6 +179,19 @@ function Main() {
     })
     console.log(td)
     setTrade(td)
+    if (td) {
+      // ---- backward trading
+      const td2 = await SmartRouter.getBestTrade(td.outputAmount, swapFrom, TradeType.EXACT_INPUT, {
+        gasPriceWei: () => viemChainClient.getGasPrice(),
+        maxHops: 2,
+        maxSplits: 2,
+        poolProvider: SmartRouter.createStaticPoolProvider(pools),
+        quoteProvider,
+        quoterOptimization: true,
+      })
+      console.log(td2)
+      setTrade2(td2)
+    }
   }, [amount])
 
   const swapCallParams = useMemo(() => {
@@ -194,7 +199,6 @@ function Main() {
       return null
     }
     const { value, calldata } = SwapRouter.swapCallParameters(trade, {
-      // recipient: address,
       recipient: account.address,
       slippageTolerance: new Percent(1),
     })
@@ -205,8 +209,28 @@ function Main() {
     }
   }, [trade, address])
 
+  // FIXME: approve!!
+
+  const swapCallParams2 = useMemo(() => {
+    if (!trade2) {
+      return null
+    }
+    const { value, calldata } = SwapRouter.swapCallParameters(trade2, {
+      recipient: account.address,
+      slippageTolerance: new Percent(1),
+    })
+    return {
+      address: SMART_ROUTER_ADDRESSES[chainId],
+      calldata,
+      value,
+    }
+  }, [trade2, address])
+
   const swap = useCallback(async () => {
     if (!trade || !swapCallParams || !address) {
+      return
+    }
+    if (!trade2 || !swapCallParams2) {
       return
     }
 
@@ -257,6 +281,34 @@ function Main() {
     
     console.log(`hash: ${hash}`);
 
+    
+    const { value: value2, calldata: calldata2, address: routerAddress2 } = swapCallParams2
+    console.log(`swapCallParams2: value: ${value2}`);
+
+    // // FIXME: approval
+    // if (trade2.inputAmount.currency.symbol !== "BNB") {
+    //   SmartRouter.
+    //   trade2.inputAmount.currency
+    // }
+
+    // Estimate gas
+    const gasEstimate2 = await viemChainClient.estimateGas({
+      account: account.address,
+      to: routerAddress2,
+      data: calldata2,
+      value: hexToBigInt(value2),
+    });
+    console.log(`Estimated Gas: ${gasEstimate2}`);
+
+    const hash2 = await address.sendTransaction({
+      to: routerAddress2,
+      data: calldata2,
+      value: hexToBigInt(value2),
+      gas: calculateGasMargin(gasEstimate2),
+    });
+
+    console.log(`hash2: ${hash2}`);
+
   }, [swapCallParams, address, account.address])
 
   // const checkBalance = useCallback(async () => {
@@ -282,6 +334,10 @@ function Main() {
         <p>
           Get best quote swapping from {amount.toExact()} {amount.currency.symbol} to {' '}
           {printAmount(trade?.outputAmount) || '?'} {swapTo.symbol}
+        </p>
+        <p>
+          Get best quote swapping from {printAmount(trade?.outputAmount)} {swapTo.symbol} to {' '}
+          {printAmount(trade2?.outputAmount)} {amount.currency.symbol}
         </p>
         <p>
           {isConnected ? (

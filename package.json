@@ -10,11 +10,12 @@
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^13.5.0",
+    "@types/big.js": "^6.2.2",
     "@types/jest": "^27.5.2",
     "@types/node": "^16.18.126",
     "@types/react": "^19.1.6",
     "@types/react-dom": "^19.1.5",
-    "graphql-request": "^5.0.0",
+    "big.js": "^7.0.1",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-scripts": "5.0.1",
@@ -26,7 +27,11 @@
   "overrides": {
     "@typescript-eslint/typescript-estree": "^5.57.1",
     "fork-ts-checker-webpack-plugin": "^6.5.3",
+    "react": "^19.1.0",
     "typescript": "^5.1.6"
+  },
+  "peerDependencies": {
+    "graphql-request": "^5.0.0"
   },
   "scripts": {
     "start": "react-scripts start",
