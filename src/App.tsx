@@ -1,16 +1,10 @@
-import { Native, ChainId, CurrencyAmount, TradeType, Percent, Currency } from '@pancakeswap/sdk'
+import { Native, ERC20Token, ChainId, CurrencyAmount, TradeType, Percent, Currency } from '@pancakeswap/sdk'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { SmartRouter, SmartRouterTrade, SMART_ROUTER_ADDRESSES, SwapRouter } from '@pancakeswap/smart-router'
 import { bscTokens } from '@pancakeswap/tokens'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-  WagmiProvider,
-  createConfig,
-  useAccount,
-  useConnect,
-  useSwitchChain,
-  useChainId,
-  useSendTransaction,
+  createConfig
 } from 'wagmi'
 import { bsc } from 'wagmi/chains'
 
@@ -20,22 +14,25 @@ import { GraphQLClient } from 'graphql-request'
 
 import Big from 'big.js'
 
-import { PRIVATE_KEY } from './secret'
+import ERC20 from '@openzeppelin/contracts/build/contracts/ERC20.json'
 
+import { PRIVATE_KEY } from './secret'
 import './App.css'
 
 const chainId = ChainId.BSC
 
-const swapMission = {
-  swapFrom: Native.onChain(chainId),
-  swapFromAmount: 10n ** 18n,
-  swapTo: bscTokens.usdt,
-}
+const smartRounterAddress = SMART_ROUTER_ADDRESSES[chainId];
+
 // const swapMission = {
-//   swapFrom: bscTokens.usdt,
-//   swapFromAmount: 641708056667369017221n,
-//   swapTo: Native.onChain(chainId),
+//   swapFrom: Native.onChain(chainId),
+//   swapFromAmount: 10n ** 18n,
+//   swapTo: bscTokens.usdt,
 // }
+const swapMission = {
+  swapFrom: bscTokens.usdt,
+  swapFromAmount: 650576197739397599575n,
+  swapTo: Native.onChain(chainId), // TODO: Native | ERC20Token
+}
 const { swapFrom, swapFromAmount, swapTo } = swapMission
 
 const queryClient = new QueryClient()
@@ -72,9 +69,9 @@ const isLocal = true;
 const viemChainClient = createPublicClient({
   chain: chain,
   transport: http(),
-  batch: {
-    multicall: true
-  },
+  // batch: {
+  //   multicall: true
+  // },
 });
 
 const viemChainClientForGetPool = createPublicClient({
@@ -119,6 +116,25 @@ const quoteProvider = SmartRouter.createQuoteProvider({
   onChainProvider: () => viemChainClient,
 })
 
+async function getBalanceOfTokenOrNative(address : `0x${string}` , token : Native | ERC20Token) {
+  if (token.isNative) {
+    // bsc
+    const balance = await viemChainClient.getBalance({
+      address: address
+    })
+    return balance
+  } else {
+    const balance = await viemChainClient.simulateContract({
+      address: token.address,
+      abi: ERC20.abi,
+      functionName: 'balanceOf',
+      args: [smartRounterAddress],
+      account: address,
+    })
+    return balance
+  }
+}
+
 function calculateGasMargin(value: bigint, margin = 1000n): bigint {
   return (value * (10000n + margin)) / 10000n
 }
@@ -130,31 +146,39 @@ function printAmount(amount: CurrencyAmount<Currency> | undefined) {
 
 export default function SmartRouterExample() {
   return (
-    <WagmiProvider config={config}>
-      <QueryClientProvider client={queryClient}>
-        <Main />
-      </QueryClientProvider>
-    </WagmiProvider>
+    <QueryClientProvider client={queryClient}>
+      <Main />
+    </QueryClientProvider>
   )
 }
 
 function Main() {
-  const currentChainId = useChainId()
-  // const { address, isConnected } = useAccount()
-  // const privateKey = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'
-  const privateKey = PRIVATE_KEY
-  // const addr = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
-  const account = privateKeyToAccount(privateKey);
-  const address = createWalletClient({
+  const account = privateKeyToAccount(PRIVATE_KEY);
+  const walletClient = createWalletClient({
     account,
     chain,
     transport: http(),
   })
-  const isConnected = true
-  const { connect, connectors } = useConnect()
-  const { switchChainAsync: switchNetwork } = useSwitchChain()
-  const { sendTransactionAsync } = useSendTransaction()
-
+  
+  const fundBsc = useCallback(async () => {
+    const privateKey = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'
+    // const addr = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
+    const testClient = createWalletClient({
+      account: privateKeyToAccount(privateKey),
+      chain,
+      transport: http(),
+    })
+    const transactionId = await testClient.sendTransaction({
+      to: account.address,
+      value: 1000n * 10n**18n,
+    })
+    console.log({transactionId})
+    const balance = await viemChainClient.getBalance({
+      address: account.address
+    })
+    console.log({balance})
+  }, [])
+  
   const [trade, setTrade] = useState<SmartRouterTrade<TradeType> | null>(null)
   const amount = useMemo(() => CurrencyAmount.fromRawAmount(swapFrom, swapFromAmount), [])
   const getBestRoute = useCallback(async () => {
@@ -194,62 +218,53 @@ function Main() {
       return null
     }
     const { value, calldata } = SwapRouter.swapCallParameters(trade, {
-      // recipient: address,
       recipient: account.address,
       slippageTolerance: new Percent(1),
     })
     return {
-      address: SMART_ROUTER_ADDRESSES[chainId],
       calldata,
       value,
     }
-  }, [trade, address])
+  }, [trade, account])
 
   const swap = useCallback(async () => {
-    if (!trade || !swapCallParams || !address) {
+    if (!trade || !swapCallParams) {
       return
     }
 
-    const { value, calldata, address: routerAddress } = swapCallParams
+    const { value, calldata } = swapCallParams
     console.log(`swapCallParams: value: ${value}`);
 
-    // const tx = {
-    //   account: address,
-    //   to: routerAddress,
-    //   data: calldata,
-    //   value: hexToBigInt(value),
-    // }
-    // const gasEstimate = await viemChainClient.estimateGas(tx)
+    console.log('symbol', swapFrom.symbol)
 
-    // await sendTransactionAsync({
-    //   account: address,
-    //   chainId,
-    //   to: routerAddress,
-    //   data: calldata,
-    //   value: hexToBigInt(value),
-    //   gas: calculateGasMargin(gasEstimate),
-    // })
+    if (!swapFrom.isNative) {
+      // swapping from coin
+      // approve
+      const { request } = await viemChainClient.simulateContract({
+        address: swapFrom.address,
+        abi: ERC20.abi,
+        functionName: 'approve',
+        args: [smartRounterAddress, swapFromAmount],
+        account
+      })
+      const result = await walletClient.writeContract(request)
+      console.log('approve', result)
+    }
 
-    // console.log({
-    //   account: address,
-    //   chainId,
-    //   to: routerAddress,
-    //   data: calldata,
-    //   value: hexToBigInt(value),
-    //   // gas: calculateGasMargin(gasEstimate),
-    // })
-    
+    let balance = await getBalanceOfTokenOrNative(account.address , swapTo)
+    console.log('balance before', balance)
+
     // Estimate gas
     const gasEstimate = await viemChainClient.estimateGas({
       account: account.address,
-      to: routerAddress,
+      to: smartRounterAddress,
       data: calldata,
       value: hexToBigInt(value),
     });
     console.log(`Estimated Gas: ${gasEstimate}`);
 
-    const hash = await address.sendTransaction({
-      to: routerAddress,
+    const hash = await walletClient.sendTransaction({
+      to: smartRounterAddress,
       data: calldata,
       value: hexToBigInt(value),
       gas: calculateGasMargin(gasEstimate),
@@ -257,7 +272,10 @@ function Main() {
     
     console.log(`hash: ${hash}`);
 
-  }, [swapCallParams, address, account.address])
+    balance = await getBalanceOfTokenOrNative(account.address , swapTo)
+    console.log('balance after', balance)
+
+  }, [swapCallParams, walletClient, account.address])
 
   // const checkBalance = useCallback(async () => {
   //   const balance = await viemChainClient.getBalance({
@@ -268,12 +286,6 @@ function Main() {
   //   // swapTo.
   // }, [account.address])
 
-  useEffect(() => {
-    if (isConnected && currentChainId !== chainId) {
-      switchNetwork?.({ chainId })
-    }
-  }, [isConnected, switchNetwork, currentChainId])
-
   return (
     <div className="App">
       <header className="App-header">
@@ -283,14 +295,7 @@ function Main() {
           Get best quote swapping from {amount.toExact()} {amount.currency.symbol} to {' '}
           {printAmount(trade?.outputAmount) || '?'} {swapTo.symbol}
         </p>
-        <p>
-          {isConnected ? (
-            // address
-            "connected"
-          ) : (
-            <button onClick={() => connect({ connector: connectors[0] })}>Connect wallet</button>
-          )}
-        </p>
+        <p><button onClick={fundBsc}>Get Fund</button></p>
         <p>{!trade ? <button onClick={getBestRoute}>Get Quote</button> : <button onClick={swap}>Swap</button>}</p>
       </header>
     </div>
