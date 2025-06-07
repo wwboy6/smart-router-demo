@@ -1,3 +1,4 @@
+import { Currency, CurrencyAmount } from "@pancakeswap/sdk"
 import Big from "big.js"
 
 export function toSerializable(value: any) : any {
@@ -43,6 +44,12 @@ export function parseSerializable(value: any) : any {
   return value
 }
 
-export function printBalance(balance : bigint) : string {
-  return Big(balance.toString()).div((10n**18n).toString()).toString()
+
+export function printAmount(amount: CurrencyAmount<Currency> | undefined) {
+  if (!amount) return '?'
+  return printBalance(amount.quotient, amount.decimalScale)
+}
+
+export function printBalance(balance : bigint, decimalScale : bigint = 10n**18n) : string {
+  return Big(balance.toString()).div(decimalScale.toString()).toFixed(5)
 }
