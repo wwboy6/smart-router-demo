@@ -2504,9 +2504,6 @@ const raw = [
 
 const converted = parseSerializable(raw)
 
-console.log('converted')
-console.log(converted)
-
 function parseCurrency(data: any) {
   if (data.isToken) {
     return new Token(
@@ -2547,7 +2544,7 @@ function parsePool(data: any) {
         token0ProtocolFee: new Percent(data.token0ProtocolFee.numerator, data.token0ProtocolFee.denominator),
         token1ProtocolFee: new Percent(data.token1ProtocolFee.numerator, data.token1ProtocolFee.denominator),
         // TODO: verify this
-        ticks: data.ticks.map((t : any) => new Tick(t))
+        ticks: data.ticks?.map((t : any) => new Tick(t))
       }
     case PoolType.STABLE:
       console.log('stable')

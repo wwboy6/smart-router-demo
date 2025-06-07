@@ -1,3 +1,5 @@
+import Big from "big.js"
+
 export function toSerializable(value: any) : any {
   switch (typeof(value)) {
     case 'object':
@@ -39,4 +41,8 @@ export function parseSerializable(value: any) : any {
       }, {} as any)
   }
   return value
+}
+
+export function printBalance(balance : bigint) : string {
+  return Big(balance.toString()).div((10n**18n).toString()).toString()
 }

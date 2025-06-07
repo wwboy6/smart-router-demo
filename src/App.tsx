@@ -20,21 +20,22 @@ import { PRIVATE_KEY } from './secret'
 import './App.css'
 // import { toSerializable } from './util'
 import { pools } from './pools'
+import { printBalance } from './util'
 
 const chainId = ChainId.BSC
 
 const smartRounterAddress = SMART_ROUTER_ADDRESSES[chainId];
 
-// const swapMission = {
-//   swapFrom: Native.onChain(chainId),
-//   swapFromAmount: 10n ** 18n,
-//   swapTo: bscTokens.usdt,
-// }
 const swapMission = {
-  swapFrom: bscTokens.usdt,
-  swapFromAmount: 650576197739397599575n,
-  swapTo: Native.onChain(chainId), // TODO: Native | ERC20Token
+  swapFrom: Native.onChain(chainId),
+  swapFromAmount: 10n ** 18n,
+  swapTo: bscTokens.usdt,
 }
+// const swapMission = {
+//   swapFrom: bscTokens.usdt,
+//   swapFromAmount: 650576197739397599575n,
+//   swapTo: Native.onChain(chainId), // TODO: Native | ERC20Token
+// }
 const { swapFrom, swapFromAmount, swapTo } = swapMission
 
 const queryClient = new QueryClient()
@@ -118,20 +119,19 @@ const quoteProvider = SmartRouter.createQuoteProvider({
   onChainProvider: () => viemChainClient,
 })
 
-async function getBalanceOfTokenOrNative(address : `0x${string}` , token : Native | ERC20Token) {
+async function getBalanceOfTokenOrNative(address : `0x${string}` , token : Native | ERC20Token) : Promise<bigint> {
   if (token.isNative) {
     // bsc
     const balance = await viemChainClient.getBalance({
-      address: address
+      address
     })
     return balance
   } else {
-    const balance = await viemChainClient.simulateContract({
+    const balance : any = await viemChainClient.readContract({
       address: token.address,
       abi: ERC20.abi,
       functionName: 'balanceOf',
-      args: [smartRounterAddress],
-      account: address,
+      args: [address],
     })
     return balance
   }
@@ -143,7 +143,7 @@ function calculateGasMargin(value: bigint, margin = 1000n): bigint {
 
 function printAmount(amount: CurrencyAmount<Currency> | undefined) {
   if (!amount) return '?'
-  return new Big(amount.quotient.toString()).div(amount.decimalScale.toString()).toPrecision(5)
+  return new Big(amount.quotient.toString()).div(amount.decimalScale.toString()).toFixed(5)
 }
 
 export default function SmartRouterExample() {
@@ -179,10 +179,14 @@ function Main() {
       address: account.address
     })
     console.log({balance})
-  }, [])
+  }, [account.address])
   
   const [trade, setTrade] = useState<SmartRouterTrade<TradeType> | null>(null)
   const amount = useMemo(() => CurrencyAmount.fromRawAmount(swapFrom, swapFromAmount), [])
+
+  const [trade2, setTrade2] = useState<SmartRouterTrade<TradeType> | null>(null)
+
+
   const getBestRoute = useCallback(async () => {
     // console.log('here')
     // const v2p = SmartRouter.getV2CandidatePools({
@@ -217,6 +221,20 @@ function Main() {
     })
     console.log(td)
     setTrade(td)
+    if (!td) return
+    // ---- backward trading
+    const td2 = await SmartRouter.getBestTrade(td.outputAmount, swapFrom, TradeType.EXACT_INPUT, {
+      gasPriceWei: () => viemChainClient.getGasPrice(),
+      maxHops: 2,
+      maxSplits: 2,
+      poolProvider: SmartRouter.createStaticPoolProvider(pools),
+      quoteProvider,
+      quoterOptimization: true,
+    })
+    console.log(td2)
+    setTrade2(td2)
+    if (!td2) return
+    console.log('profit', Big((td2.outputAmount.numerator - swapFromAmount).toString()).div((10n**18n).toString()).toString())
   }, [amount])
 
   const swapCallParams = useMemo(() => {
@@ -233,14 +251,22 @@ function Main() {
     }
   }, [trade, account])
 
-  const swap = useCallback(async () => {
-    if (!trade || !swapCallParams) {
-      return
+  const swapCallParams2 = useMemo(() => {
+    if (!trade2) {
+      return null
     }
+    const { value, calldata } = SwapRouter.swapCallParameters(trade2, {
+      recipient: account.address,
+      slippageTolerance: new Percent(1),
+    })
+    return {
+      calldata,
+      value,
+    }
+  }, [trade2, account])
 
-    const { value, calldata } = swapCallParams
-    console.log(`swapCallParams: value: ${value}`);
-
+  const _swap = useCallback(async (value : `0x${string}`, calldata : `0x${string}`, swapFrom : Currency, swapFromAmount : bigint, swapTo : Currency) => {
+    console.log('_swap')
     console.log('symbol', swapFrom.symbol)
 
     if (!swapFrom.isNative) {
@@ -258,7 +284,7 @@ function Main() {
     }
 
     let balance = await getBalanceOfTokenOrNative(account.address , swapTo)
-    console.log('balance before', balance)
+    console.log('balance before', swapTo.symbol, balance)
 
     // Estimate gas
     const gasEstimate = await viemChainClient.estimateGas({
@@ -279,9 +305,30 @@ function Main() {
     console.log(`hash: ${hash}`);
 
     balance = await getBalanceOfTokenOrNative(account.address , swapTo)
-    console.log('balance after', balance)
+    console.log('balance after', swapTo.symbol, balance)
+    if (!balance) throw new Error('should not be zero')
+    return balance
+  }, [account, walletClient])
 
-  }, [swapCallParams, walletClient, account.address])
+  const swap = useCallback(async () => {
+    if (!swapCallParams || !swapCallParams2) {
+      return
+    }
+
+    const originalBscBalance = await getBalanceOfTokenOrNative(account.address, swapFrom)
+    console.log({originalBscBalance})
+
+    const { value, calldata } = swapCallParams
+    const balance = await _swap(value, calldata, swapFrom, swapFromAmount, swapTo)
+
+    const { value: value2, calldata: calldata2 } = swapCallParams2
+    await _swap(value2, calldata2, swapTo, balance, swapFrom)
+
+    const finalBscBalance = await getBalanceOfTokenOrNative(account.address, swapFrom)
+    console.log({finalBscBalance})
+    console.log('net different', printBalance(finalBscBalance - originalBscBalance))
+
+  }, [swapCallParams, swapCallParams2, _swap, account.address])
 
   return (
     <div className="App">
@@ -289,8 +336,12 @@ function Main() {
         <p>Pancakeswap Smart Router Example.</p>
         {isLocal ? <p>!! Local !!</p> : <p> Main Net</p>}
         <p>
-          Get best quote swapping from {amount.toExact()} {amount.currency.symbol} to {' '}
+          Get best quote swapping from {printAmount(amount)} {amount.currency.symbol} to {' '}
           {printAmount(trade?.outputAmount) || '?'} {swapTo.symbol}
+        </p>
+        <p>
+          Get best quote swapping from {printAmount(trade?.outputAmount)} {swapTo.symbol} to {' '}
+          {printAmount(trade2?.outputAmount)} {amount.currency.symbol}
         </p>
         <p><button onClick={fundBsc}>Get Fund</button></p>
         <p>{!trade ? <button onClick={getBestRoute}>Get Quote</button> : <button onClick={swap}>Swap</button>}</p>
