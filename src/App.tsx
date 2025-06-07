@@ -18,6 +18,8 @@ import ERC20 from '@openzeppelin/contracts/build/contracts/ERC20.json'
 
 import { PRIVATE_KEY } from './secret'
 import './App.css'
+// import { toSerializable } from './util'
+import { pools } from './pools'
 
 const chainId = ChainId.BSC
 
@@ -182,24 +184,28 @@ function Main() {
   const [trade, setTrade] = useState<SmartRouterTrade<TradeType> | null>(null)
   const amount = useMemo(() => CurrencyAmount.fromRawAmount(swapFrom, swapFromAmount), [])
   const getBestRoute = useCallback(async () => {
-    const [v2Pools, v3Pools] = await Promise.all([
-      SmartRouter.getV2CandidatePools({
-        onChainProvider: () => viemChainClientForGetPool,
-        v2SubgraphProvider: () => v2SubgraphClient,
-        v3SubgraphProvider: () => v3SubgraphClient,
-        currencyA: amount.currency,
-        currencyB: swapTo,
-      }),
-      SmartRouter.getV3CandidatePools({
-        onChainProvider: () => viemChainClientForGetPool,
-        subgraphProvider: () => v3SubgraphClient,
-        currencyA: amount.currency,
-        currencyB: swapTo,
-        subgraphFallback: false,
-      }),
-    ])
-    const pools = [...v2Pools, ...v3Pools]
+    // console.log('here')
+    // const v2p = SmartRouter.getV2CandidatePools({
+    //   onChainProvider: () => viemChainClientForGetPool,
+    //   v2SubgraphProvider: () => v2SubgraphClient,
+    //   v3SubgraphProvider: () => v3SubgraphClient,
+    //   currencyA: amount.currency,
+    //   currencyB: swapTo,
+    // })
+    // const v3p = SmartRouter.getV3CandidatePools({
+    //   onChainProvider: () => viemChainClientForGetPool,
+    //   subgraphProvider: () => v3SubgraphClient,
+    //   currencyA: amount.currency,
+    //   currencyB: swapTo,
+    //   subgraphFallback: false,
+    // })
+    // const [v2Pools, v3Pools] = await Promise.all([
+    //   v2p,
+    //   v3p,
+    // ])
+    // const pools = [...v2Pools, ...v3Pools]
     // console.log(pools)
+    // console.log(toSerializableString(pools))
     // ---- forward trading
     const td = await SmartRouter.getBestTrade(amount, swapTo, TradeType.EXACT_INPUT, {
       gasPriceWei: () => viemChainClient.getGasPrice(),
