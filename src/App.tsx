@@ -45,7 +45,7 @@ const swapMission = {
 }
 // const swapMission = {
 //   swapFrom: bscTokens.babycake,
-//   swapFromAmount: 6559148517442130951757367n,
+//   swapFromAmount: 3279720347055191991407771n,
 //   swapTo: bscTokens.usdt,
 // }
 const { swapFrom, swapFromAmount, swapTo } = swapMission
@@ -288,25 +288,28 @@ function Main() {
     const poolAddresses = new Set(pools.map(p => (p as any).address))
 
     if (!isOneway) {
-    // ---- backward trading
-    const td2 = await SmartRouter.getBestTrade(td.outputAmount, swapFrom, TradeType.EXACT_INPUT, {
-      gasPriceWei: () => viemChainClient.getGasPrice(),
-      maxHops: 2,
-      maxSplits: 2,
-        poolProvider: SmartRouter.createStaticPoolProvider(swapPools),
-      quoteProvider,
-      quoterOptimization: true,
-    })
-    console.log(td2)
-    setTrade2(td2)
-    if (!td2) return
-      const pools2 = td2.routes.map(r => r.pools).flat()
-      console.log("pools2", pools2)
-      const poolAddresses2 = new Set(pools2.map(p => (p as any).address))
-      const intersectingAddress = poolAddresses.intersection(poolAddresses2)
-      if (intersectingAddress.size) console.warn('intersecting pool', intersectingAddress)
+      // ---- backward trading
+      // exclude pools of forward trading
+      const swapPools2 = swapPools.filter((p : any) => !poolAddresses.has(p.address) )
       //
-    console.log('profit', Big((td2.outputAmount.numerator - swapFromAmount).toString()).div((10n**18n).toString()).toString())
+      const td2 = await SmartRouter.getBestTrade(td.outputAmount, swapFrom, TradeType.EXACT_INPUT, {
+        gasPriceWei: () => viemChainClient.getGasPrice(),
+        maxHops: 2,
+        maxSplits: 2,
+          poolProvider: SmartRouter.createStaticPoolProvider(swapPools2),
+        quoteProvider,
+        quoterOptimization: true,
+      })
+      console.log(td2)
+      setTrade2(td2)
+      if (!td2) return
+        const pools2 = td2.routes.map(r => r.pools).flat()
+        console.log("pools2", pools2)
+        const poolAddresses2 = new Set(pools2.map(p => (p as any).address))
+        const intersectingAddress = poolAddresses.intersection(poolAddresses2)
+        if (intersectingAddress.size) console.warn('intersecting pool', intersectingAddress)
+        //
+      console.log('profit', Big((td2.outputAmount.numerator - swapFromAmount).toString()).div((10n**18n).toString()).toString())
     }
   }, [amount, isOneway])
 
@@ -353,7 +356,7 @@ function Main() {
         account
       })
       const result = await walletClient.writeContract(request)
-      console.log('approve', result)
+      console.log('approve', swapFromAmount, result)
     }
 
     let balancef0 : bigint, balancef1 : bigint, balancet0 : bigint, balancet1 : bigint
@@ -371,19 +374,31 @@ function Main() {
     }
 
     // Estimate gas
-    const gasEstimate = await viemChainClient.estimateGas({
-      account: account.address,
-      to: smartRounterAddress,
-      data: calldata,
-      value: hexToBigInt(value),
-    });
-    console.log(`Estimated Gas: ${gasEstimate}`);
+    let gasEstimate = 0n
+    let error
+    for (let i = 0; i < 3; ++i) {
+      try {
+        gasEstimate = await viemChainClient.estimateGas({
+          account: account.address,
+          to: smartRounterAddress,
+          data: calldata,
+          value: hexToBigInt(value),
+        });
+        console.log(`Estimated Gas: ${gasEstimate}`);
+        break;
+      } catch (e) {
+        error = e
+        console.warn('estimate gas failed', e)
+      }
+    }
+    if (!gasEstimate) throw error
 
     const hash = await walletClient.sendTransaction({
       to: smartRounterAddress,
       data: calldata,
       value: hexToBigInt(value),
       gas: calculateGasMargin(gasEstimate),
+      // gas: 10000000n
     });
     
     console.log(`hash: ${hash}`);
@@ -427,7 +442,7 @@ function Main() {
 
     const finalBscBalance = await getBalanceOfTokenOrNative(account.address, swapFrom)
     console.log({finalBscBalance})
-    console.log('net different', printBalance(finalBscBalance - originalBscBalance))
+    console.log('net different', swapFrom.symbol, printBalance(finalBscBalance - originalBscBalance))
 
     if (swapFrom.isToken && swapTo.isToken) {
       // also display native balance
