@@ -7,6 +7,7 @@ import { getPools as getPools_native_usdt } from './pools-native-usdt'
 import { getPools as getPools_usdt_bnb } from './pools-usdt-bnb'
 import { getPools as getPools_busd_usdt } from './pools-busd-usdt'
 import { getPools as getPools_usdt_babycake } from './pools-usdt-babycake'
+import { getPools as getPools_usdt_wbnb } from './pools-usdt-wbnb'
 
 function parseCurrency(data: any) {
   if (data.isToken) {
@@ -97,6 +98,8 @@ function _getPoolData (swapFrom : string, swapTo : string) : any {
           return  getPools_usdt_bnb()
         case 'BABYCAKE':
           return getPools_usdt_babycake()
+        case 'WBNB':
+          return getPools_usdt_wbnb()
       }
       break;
   }

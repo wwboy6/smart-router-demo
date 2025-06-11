@@ -4,11 +4,12 @@ import { SmartRouter, SmartRouterTrade, SMART_ROUTER_ADDRESSES, SwapRouter } fro
 import { bscTokens } from '@pancakeswap/tokens'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-  createConfig
+  createConfig,
+  useCall
 } from 'wagmi'
 import { bsc } from 'wagmi/chains'
 
-import { createPublicClient, defineChain, hexToBigInt, http, createWalletClient } from 'viem'
+import { createPublicClient, defineChain, hexToBigInt, http, createWalletClient, BaseError, ContractFunctionRevertedError, Chain } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts';
 import { GraphQLClient } from 'graphql-request'
 
@@ -21,11 +22,15 @@ import './App.css'
 // import { toSerializable } from './util'
 ;
 import { getPools } from './pools'
-import { printAmount, printBalance, toSerializable } from './util';;;;;;;;;;;;;;;;
+import { printAmount, printBalance, toSerializable } from './util';
+
+import FlashLoadSmartRouterInfo from './contract/FlashLoadSmartRouter.json'
+
+const FlashLoadSmartRouterAddress = "0x0299354d5e54bB9f817d2d26d7DC3B816d8f6925"
 
 const chainId = ChainId.BSC
 
-const smartRounterAddress = SMART_ROUTER_ADDRESSES[chainId];
+const smartRouterAddress = SMART_ROUTER_ADDRESSES[chainId];
 
 const nativeCurrency = Native.onChain(chainId)
 
@@ -34,14 +39,18 @@ const swapMission = {
   // swapFromAmount: 25n * 10n ** 16n,
   // swapFromAmount: 5n * 10n ** 17n,
 
-  // swapFromAmount: 10n ** 18n,
+  swapFromAmount: 10n ** 18n,
+  // swapFromAmount: 15n * 10n ** 17n,
   // swapFromAmount: 2n * 10n ** 18n,
   // swapFromAmount: 3n * 10n ** 18n,
   // swapFromAmount: 6n * 10n ** 18n,
   // swapFromAmount: 12n * 10n ** 18n,
-  swapFromAmount: 25n * 10n ** 18n,
+  // swapFromAmount: 25n * 10n ** 18n,
   // swapFromAmount: 50n * 10n ** 18n,
-  swapTo: bscTokens.babycake,
+  // swapFromAmount: 100n * 10n ** 18n,
+  // swapFromAmount: 1000n * 10n ** 18n,
+  // swapFromAmount: 100000n * 10n ** 18n,
+  swapTo: bscTokens.wbnb,
 }
 // const swapMission = {
 //   swapFrom: bscTokens.babycake,
@@ -55,10 +64,10 @@ const queryClient = new QueryClient()
 // TODO:
 const isLocal = true;
 
-// let chain;
+let chain : Chain;
 
-// if (isLocal) {
-  let chain = defineChain({
+if (isLocal) {
+  chain = defineChain({
     // id: 31337,
     id: 56,
     name: 'Local Hardhat',
@@ -76,53 +85,30 @@ const isLocal = true;
         http: ['http://127.0.0.1:8545'],
       },
     },
+    contracts: {
+      multicall3: { address: "0xcA11bde05977b3631167028862bE2a173976CA11" },
+    }
   });
-// } else {
-//   chain = bsc;
-// }
+} else {
+  chain = bsc;
+}
 
 const viemChainClient = createPublicClient({
   chain: chain,
   transport: http(),
-  // batch: {
-  //   multicall: true
-  // },
+  batch: {
+    multicall: {
+      batchSize: 1024 * 200,
+    }
+  },
 });
-
-const viemChainClientForGetPool = createPublicClient({
-  chain: bsc,
-  transport: http('https://bsc-dataseed1.binance.org'),
-  // batch: {
-  //   multicall: {
-  //     batchSize: 1024 * 200,
-  //   },
-  // },
-});
-
-// const viemChainClient = createPublicClient({
-//   chain: bsc,
-//   transport: http('https://bsc-dataseed1.binance.org'),
-//   batch: {
-//     multicall: {
-//       batchSize: 1024 * 200,
-//     },
-//   },
-// })
 
 export const config = createConfig({
   chains: [chain],
   transports: {
-    // 31337: http(),
-    56: http(),
+    [bsc.id]: http(),
   },
 })
-
-// export const config = createConfig({
-//   chains: [bsc],
-//   transports: {
-//     [bsc.id]: http('https://bsc-dataseed1.binance.org'),
-//   },
-// })
 
 const v3SubgraphClient = new GraphQLClient('https://api.thegraph.com/subgraphs/name/pancakeswap/exchange-v3-bsc')
 const v2SubgraphClient = new GraphQLClient('https://proxy-worker-api.pancakeswap.com/bsc-exchange')
@@ -136,14 +122,14 @@ async function getSwapPools(swapFrom : Currency, swapTo : Currency) { // TODO: r
   if (!swapPools) {
     console.warn('fetch swap pools !!!', swapFrom.symbol, swapTo.symbol)
     const v2p = SmartRouter.getV2CandidatePools({
-      onChainProvider: () => viemChainClientForGetPool,
+      onChainProvider: () => viemChainClient,
       v2SubgraphProvider: () => v2SubgraphClient,
       v3SubgraphProvider: () => v3SubgraphClient,
       currencyA: swapFrom,
       currencyB: swapTo,
     })
     const v3p = SmartRouter.getV3CandidatePools({
-      onChainProvider: () => viemChainClientForGetPool,
+      onChainProvider: () => viemChainClient,
       subgraphProvider: () => v3SubgraphClient,
       currencyA: swapFrom,
       currencyB: swapTo,
@@ -155,7 +141,7 @@ async function getSwapPools(swapFrom : Currency, swapTo : Currency) { // TODO: r
     ])
     swapPools = [...v2Pools, ...v3Pools]
     console.log(swapPools)
-    console.log(toSerializable(swapPools))
+    console.log(JSON.stringify(toSerializable(swapPools))) // TODO: use library instead
   }
   return swapPools
 }
@@ -180,6 +166,26 @@ async function getBalanceOfTokenOrNative(address : `0x${string}` , token : Nativ
 
 function calculateGasMargin(value: bigint, margin = 1000n): bigint {
   return (value * (10000n + margin)) / 10000n
+}
+
+// update trade to use one route per each swap, and transfer all balance in the middle
+function prepareTradeForCustomContract(trade : SmartRouterTrade<TradeType>) : SmartRouterTrade<TradeType> {
+  const inputAmount = CurrencyAmount.fromRawAmount(trade.inputAmount.currency, 0n) // get all transferred balance
+  const outputAmount = CurrencyAmount.fromRawAmount(trade.outputAmount.currency, 0n) // no minimum output
+  const updatedTrade : SmartRouterTrade<TradeType> = {
+    ...trade,
+    inputAmount,
+    outputAmount,
+    routes: [
+      {
+        ...trade.routes[0],
+        inputAmount,
+        outputAmount,
+        percent: 100,
+      }
+    ]
+  }
+  return updatedTrade
 }
 
 export default function SmartRouterExample() {
@@ -237,13 +243,13 @@ function Main() {
       // Estimate gas
       const gasEstimate = await viemChainClient.estimateGas({
         account: account.address,
-        to: smartRounterAddress,
+        to: smartRouterAddress,
         data: calldata,
         value: hexToBigInt(value),
       });
       console.log(`Estimated Gas: ${gasEstimate}`);
       const hash = await walletClient.sendTransaction({
-        to: smartRounterAddress,
+        to: smartRouterAddress,
         data: calldata,
         value: hexToBigInt(value),
         gas: calculateGasMargin(gasEstimate),
@@ -286,7 +292,7 @@ function Main() {
     const pools = td.routes.map(r => r.pools).flat()
     console.log("pools", pools)
     const poolAddresses = new Set(pools.map(p => (p as any).address))
-
+    
     if (!isOneway) {
       // ---- backward trading
       // exclude pools of forward trading
@@ -296,7 +302,7 @@ function Main() {
         gasPriceWei: () => viemChainClient.getGasPrice(),
         maxHops: 2,
         maxSplits: 2,
-          poolProvider: SmartRouter.createStaticPoolProvider(swapPools2),
+        poolProvider: SmartRouter.createStaticPoolProvider(swapPools2),
         quoteProvider,
         quoterOptimization: true,
       })
@@ -352,7 +358,7 @@ function Main() {
         address: swapFrom.address,
         abi: ERC20.abi,
         functionName: 'approve',
-        args: [smartRounterAddress, swapFromAmount],
+        args: [smartRouterAddress, swapFromAmount],
         account
       })
       const result = await walletClient.writeContract(request)
@@ -380,7 +386,7 @@ function Main() {
       try {
         gasEstimate = await viemChainClient.estimateGas({
           account: account.address,
-          to: smartRounterAddress,
+          to: smartRouterAddress,
           data: calldata,
           value: hexToBigInt(value),
         });
@@ -394,7 +400,7 @@ function Main() {
     if (!gasEstimate) throw error
 
     const hash = await walletClient.sendTransaction({
-      to: smartRounterAddress,
+      to: smartRouterAddress,
       data: calldata,
       value: hexToBigInt(value),
       gas: calculateGasMargin(gasEstimate),
@@ -452,6 +458,77 @@ function Main() {
 
   }, [swapCallParams, swapCallParams2, _swap, account.address, isOneway])
 
+  const swap2 = useCallback(async () => {
+    if (!trade || !trade2) return
+    // TODO: seperate multiple swap if more than 1 route for any trade
+    // update trade to use one route per each swap, and transfer all balance in the middle
+    const updatedTrade = prepareTradeForCustomContract(trade)
+    const updatedTrade2 = prepareTradeForCustomContract(trade2)
+    console.log({updatedTrade})
+    console.log({updatedTrade2})
+    //
+    const { calldata } = SwapRouter.swapCallParameters(updatedTrade, {
+      recipient: FlashLoadSmartRouterAddress,
+      slippageTolerance: new Percent(1), // TODO:
+    })
+    const { calldata: calldata2 } = SwapRouter.swapCallParameters(updatedTrade2, {
+      recipient: FlashLoadSmartRouterAddress,
+      slippageTolerance: new Percent(1), // TODO:
+    })
+    // log
+    const originalBscBalance = await getBalanceOfTokenOrNative(account.address, swapFrom)
+    console.log({originalBscBalance})
+    const balanceN0 = await getBalanceOfTokenOrNative(account.address , nativeCurrency)
+    console.log('native balance before swap', printBalance(balanceN0))
+    // approve
+    const { request } = await viemChainClient.simulateContract({
+      address: swapFrom.address,
+      abi: ERC20.abi,
+      functionName: 'approve',
+      args: [FlashLoadSmartRouterAddress, swapFromAmount],
+      account
+    })
+    let result = await walletClient.writeContract(request)
+    console.log('approve', swapFromAmount, result)
+    // TODO: remove approval upon failure?
+    //
+    // result = await walletClient.writeContract({
+    //   address: FlashLoadSmartRouterAddress,
+    //   abi: FlashLoadSmartRouterInfo.abi,
+    //   functionName: "trade",
+    //   args: [swapFrom.address, swapFromAmount, calldata, swapTo.address, calldata2],
+    // })
+    // console.log(result)
+    try {
+      const { request, result: r } = await viemChainClient.simulateContract({
+        account,
+        address: FlashLoadSmartRouterAddress,
+        abi: FlashLoadSmartRouterInfo.abi,
+        functionName: "trade",
+        args: [swapFrom.address, swapFromAmount, calldata, swapTo.address, calldata2],
+      })
+      console.log(r)
+      result = await walletClient.writeContract(request)
+    } catch (err) {
+      if (err instanceof BaseError) {
+        const revertError = err.walk(err => err instanceof ContractFunctionRevertedError)
+        if (revertError instanceof ContractFunctionRevertedError) {
+          console.error('reason', revertError.reason)
+          const errorName = revertError.data?.errorName ?? ''
+          // do something with `errorName`
+          console.error({errorName})
+        }
+      }
+    }
+    console.log(result)
+    // log
+    const finalBscBalance = await getBalanceOfTokenOrNative(account.address, swapFrom)
+    console.log({finalBscBalance})
+    console.log('net different', swapFrom.symbol, printBalance(finalBscBalance - originalBscBalance))
+    const balanceN1 = await getBalanceOfTokenOrNative(account.address , nativeCurrency)
+    console.log('native balance after swap', printBalance(balanceN1), printBalance(balanceN1 - balanceN0))
+  }, [account, trade, trade2, walletClient])
+
   return (
     <div className="App">
       <header className="App-header">
@@ -472,6 +549,9 @@ function Main() {
         <p>
           <input type="checkbox" checked={isOneway} onChange={handleIsOnewayToggle} />One Way {'  '}
           {!trade ? <button onClick={getBestRoute}>Get Quote</button> : <button onClick={swap}>Swap</button>}
+        </p>
+        <p>
+          <button onClick={swap2}>swap2</button>
         </p>
       </header>
     </div>
