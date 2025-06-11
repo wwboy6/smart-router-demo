@@ -7,7 +7,7 @@ import {
   createConfig,
   useCall
 } from 'wagmi'
-import { bsc } from 'wagmi/chains'
+import { bsc } from 'viem/chains'
 
 import { createPublicClient, defineChain, hexToBigInt, http, createWalletClient, BaseError, ContractFunctionRevertedError, Chain } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts';
@@ -87,7 +87,7 @@ if (isLocal) {
     },
     contracts: {
       multicall3: { address: "0xcA11bde05977b3631167028862bE2a173976CA11" },
-    }
+    },
   });
 } else {
   chain = bsc;
@@ -113,9 +113,10 @@ export const config = createConfig({
 const v3SubgraphClient = new GraphQLClient('https://api.thegraph.com/subgraphs/name/pancakeswap/exchange-v3-bsc')
 const v2SubgraphClient = new GraphQLClient('https://proxy-worker-api.pancakeswap.com/bsc-exchange')
 
-const quoteProvider = SmartRouter.createQuoteProvider({
-  onChainProvider: () => viemChainClient,
-})
+// const quoteProvider = SmartRouter.createQuoteProvider({
+//   onChainProvider: () => viemChainClient,
+// })
+const quoteProvider = SmartRouter.createOffChainQuoteProvider()
 
 async function getSwapPools(swapFrom : Currency, swapTo : Currency) { // TODO: return type
   let swapPools = getPools(swapFrom.symbol, swapTo.symbol)
@@ -203,8 +204,19 @@ function Main() {
     chain,
     transport: http(),
   })
-  
+
+  const [gasPriceWei, setGasPriceWei] = useState(0n)
+
+  useEffect(() => {
+    (async() => {
+      const gpw = await viemChainClient.getGasPrice()
+      setGasPriceWei(gpw)
+    })()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   const getFund = useCallback(async () => {
+    if (!gasPriceWei) return
     const privateKey = '0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80'
     // const addr = '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266'
     const testClient = createWalletClient({
@@ -227,7 +239,7 @@ function Main() {
       const swapPools = await getSwapPools(nativeCurrency, swapFrom)
       const amount = CurrencyAmount.fromRawAmount(nativeCurrency, ba)
       const trade = await SmartRouter.getBestTrade(amount, swapFrom, TradeType.EXACT_INPUT, {
-        gasPriceWei: () => viemChainClient.getGasPrice(),
+        gasPriceWei,
         maxHops: 2,
         maxSplits: 2,
         poolProvider: SmartRouter.createStaticPoolProvider(swapPools),
@@ -256,7 +268,7 @@ function Main() {
       });
       console.log(hash)
     }
-  }, [account.address, walletClient])
+  }, [account.address, gasPriceWei, walletClient])
 
   const getBalances = useCallback(async () => {
     let balance = await getBalanceOfTokenOrNative(account.address, swapFrom)
@@ -274,10 +286,11 @@ function Main() {
   }, [isOneway])
 
   const getBestRoute = useCallback(async () => {
+    if (!gasPriceWei) return
     const swapPools = await getSwapPools(amount.currency, swapTo)
     // ---- forward trading
     const td = await SmartRouter.getBestTrade(amount, swapTo, TradeType.EXACT_INPUT, {
-      gasPriceWei: () => viemChainClient.getGasPrice(),
+      gasPriceWei,
       maxHops: 2,
       maxSplits: 2,
       poolProvider: SmartRouter.createStaticPoolProvider(swapPools),
@@ -299,7 +312,7 @@ function Main() {
       const swapPools2 = swapPools.filter((p : any) => !poolAddresses.has(p.address) )
       //
       const td2 = await SmartRouter.getBestTrade(td.outputAmount, swapFrom, TradeType.EXACT_INPUT, {
-        gasPriceWei: () => viemChainClient.getGasPrice(),
+        gasPriceWei,
         maxHops: 2,
         maxSplits: 2,
         poolProvider: SmartRouter.createStaticPoolProvider(swapPools2),
@@ -317,7 +330,7 @@ function Main() {
         //
       console.log('profit', Big((td2.outputAmount.numerator - swapFromAmount).toString()).div((10n**18n).toString()).toString())
     }
-  }, [amount, isOneway])
+  }, [amount, isOneway, gasPriceWei])
 
   const swapCallParams = useMemo(() => {
     if (!trade) {
