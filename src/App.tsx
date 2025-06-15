@@ -3,13 +3,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { SmartRouter, SmartRouterTrade, SMART_ROUTER_ADDRESSES, SwapRouter } from '@pancakeswap/smart-router'
 import { bscTokens } from '@pancakeswap/tokens'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import {
-  createConfig,
-  useCall
-} from 'wagmi'
+import { createConfig } from 'wagmi'
 import { bsc } from 'viem/chains'
 
-import { createPublicClient, defineChain, hexToBigInt, http, createWalletClient, BaseError, ContractFunctionRevertedError, Chain } from 'viem'
+import { defineChain, hexToBigInt, http, createWalletClient, BaseError, ContractFunctionRevertedError, Chain, Hex, createPublicClient } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts';
 import { GraphQLClient } from 'graphql-request'
 
@@ -21,12 +18,13 @@ import { PRIVATE_KEY } from './secret'
 import './App.css'
 // import { toSerializable } from './util'
 ;
-import { getPools } from './pools'
 import { printAmount, printBalance, toSerializable } from './util';
 
 import FlashLoadSmartRouterInfo from './contract/FlashLoadSmartRouter.json'
+import { v3PoolAbi } from '@pancakeswap/v3-sdk'
+import { limitedHttp } from './util/http2'
 
-const FlashLoadSmartRouterAddress = "0x0299354d5e54bB9f817d2d26d7DC3B816d8f6925"
+const FlashLoadSmartRouterAddress = "0xeed8260f27BdbBD8e79761541C63a1D82A33518c"
 
 const chainId = ChainId.BSC
 
@@ -35,7 +33,7 @@ const smartRouterAddress = SMART_ROUTER_ADDRESSES[chainId];
 const nativeCurrency = Native.onChain(chainId)
 
 const swapMission = {
-  swapFrom: bscTokens.usdt,
+  swapFrom: bscTokens.wbnb,
   // swapFromAmount: 25n * 10n ** 16n,
   // swapFromAmount: 5n * 10n ** 17n,
 
@@ -50,7 +48,7 @@ const swapMission = {
   // swapFromAmount: 100n * 10n ** 18n,
   // swapFromAmount: 1000n * 10n ** 18n,
   // swapFromAmount: 100000n * 10n ** 18n,
-  swapTo: bscTokens.wbnb,
+  swapTo: bscTokens.busd,
 }
 // const swapMission = {
 //   swapFrom: bscTokens.babycake,
@@ -62,7 +60,7 @@ const { swapFrom, swapFromAmount, swapTo } = swapMission
 const queryClient = new QueryClient()
 
 // TODO:
-const isLocal = true;
+const isLocal = false;
 
 let chain : Chain;
 
@@ -90,18 +88,48 @@ if (isLocal) {
     },
   });
 } else {
-  chain = bsc;
+  // chain = bsc;
+  chain = defineChain({
+    id: 56,
+    name: 'BNB Smart Chain',
+    nativeCurrency: {
+      decimals: 18,
+      name: 'BNB',
+      symbol: 'BNB',
+    },
+    rpcUrls: {
+      default: { http: ['https://56.rpc.thirdweb.com'] },
+      // default: { http: ['https://bsc-mainnet.infura.io/v3/05c1dbfaa33f43268f953de9e26bef0d'] },
+    },
+    blockExplorers: {
+      default: {
+        name: 'BscScan',
+        url: 'https://bscscan.com',
+        apiUrl: 'https://api.bscscan.com/api',
+      },
+    },
+    contracts: {
+      multicall3: {
+        address: '0xca11bde05977b3631167028862be2a173976ca11',
+        blockCreated: 15921452,
+      },
+    },
+  })
 }
 
+// Note: this client is hijacked
 const viemChainClient = createPublicClient({
   chain: chain,
-  transport: http(),
+  transport: limitedHttp(chain.rpcUrls.default.http[0], {
+    retryCount: Infinity, // FIXME:
+    retryDelay: 5 * 1000,
+  }, 5), // TODO:
   batch: {
     multicall: {
-      batchSize: 1024 * 200,
+      batchSize: 2**10, // TODO: determine optimal batch size
     }
   },
-});
+})
 
 export const config = createConfig({
   chains: [chain],
@@ -110,8 +138,8 @@ export const config = createConfig({
   },
 })
 
-const v3SubgraphClient = new GraphQLClient('https://api.thegraph.com/subgraphs/name/pancakeswap/exchange-v3-bsc')
 const v2SubgraphClient = new GraphQLClient('https://proxy-worker-api.pancakeswap.com/bsc-exchange')
+const v3SubgraphClient = new GraphQLClient('https://api.thegraph.com/subgraphs/name/pancakeswap/exchange-v3-bsc')
 
 // const quoteProvider = SmartRouter.createQuoteProvider({
 //   onChainProvider: () => viemChainClient,
@@ -119,35 +147,52 @@ const v2SubgraphClient = new GraphQLClient('https://proxy-worker-api.pancakeswap
 const quoteProvider = SmartRouter.createOffChainQuoteProvider()
 
 async function getSwapPools(swapFrom : Currency, swapTo : Currency) { // TODO: return type
-  let swapPools = getPools(swapFrom.symbol, swapTo.symbol)
+  // let swapPools = getPools(swapFrom.symbol, swapTo.symbol)
+  let swapPools = null
   if (!swapPools) {
     console.warn('fetch swap pools !!!', swapFrom.symbol, swapTo.symbol)
-    const v2p = SmartRouter.getV2CandidatePools({
-      onChainProvider: () => viemChainClient,
-      v2SubgraphProvider: () => v2SubgraphClient,
-      v3SubgraphProvider: () => v3SubgraphClient,
-      currencyA: swapFrom,
-      currencyB: swapTo,
-    })
-    const v3p = SmartRouter.getV3CandidatePools({
+    // const v2p = SmartRouter.getV2CandidatePools({
+    //   onChainProvider: () => viemChainClient,
+    //   v2SubgraphProvider: () => v2SubgraphClient,
+    //   v3SubgraphProvider: () => v3SubgraphClient,
+    //   currencyA: swapFrom,
+    //   currencyB: swapTo,
+    // })
+    // const v3p = SmartRouter.getV3CandidatePools({
+    //   onChainProvider: () => viemChainClient,
+    //   subgraphProvider: () => v3SubgraphClient,
+    //   currencyA: swapFrom,
+    //   currencyB: swapTo,
+    //   subgraphFallback: false,
+    // })
+    // const [v2Pools, v3Pools] = await Promise.all([
+    //   v2p,
+    //   v3p,
+    // ])
+    // const v2Pools = await SmartRouter.getV2CandidatePools({
+    //   onChainProvider: () => viemChainClient,
+    //   v2SubgraphProvider: () => v2SubgraphClient,
+    //   v3SubgraphProvider: () => v3SubgraphClient,
+    //   currencyA: swapFrom,
+    //   currencyB: swapTo,
+    // })
+    // debugger
+    const v3Pools = await SmartRouter.getV3CandidatePools({
       onChainProvider: () => viemChainClient,
       subgraphProvider: () => v3SubgraphClient,
       currencyA: swapFrom,
       currencyB: swapTo,
       subgraphFallback: false,
     })
-    const [v2Pools, v3Pools] = await Promise.all([
-      v2p,
-      v3p,
-    ])
-    swapPools = [...v2Pools, ...v3Pools]
+    // swapPools = [...v2Pools, ...v3Pools]
+    swapPools = v3Pools
     console.log(swapPools)
     console.log(JSON.stringify(toSerializable(swapPools))) // TODO: use library instead
   }
   return swapPools
 }
 
-async function getBalanceOfTokenOrNative(address : `0x${string}` , token : Native | ERC20Token) : Promise<bigint> {
+async function getBalanceOfTokenOrNative(address : Hex , token : Native | ERC20Token) : Promise<bigint> {
   if (token.isNative) {
     // bsc
     const balance = await viemChainClient.getBalance({
@@ -360,7 +405,7 @@ function Main() {
     }
   }, [trade2, account])
 
-  const _swap = useCallback(async (value : `0x${string}`, calldata : `0x${string}`, swapFrom : Currency, swapFromAmount : bigint, swapTo : Currency) => {
+  const _swap = useCallback(async (value : Hex, calldata : Hex, swapFrom : Currency, swapFromAmount : bigint, swapTo : Currency) => {
     console.log('_swap')
     console.log('symbol', swapFrom.symbol)
 
@@ -542,6 +587,40 @@ function Main() {
     console.log('native balance after swap', printBalance(balanceN1), printBalance(balanceN1 - balanceN0))
   }, [account, trade, trade2, walletClient])
 
+  const [v3PoolAddress, setV3PoolAddress] = useState<Hex>('0x36696169c63e42cd08ce11f5deebbcebae652050') // USDT - WBNB
+  const handleV3PoolAddressChange = (event: any) => {
+    setV3PoolAddress(event.target.value);
+  };
+
+  const fetchV3PoolInfo = useCallback(async () => {
+    // const result = await viemChainClient.readContract({
+    //   address: v3PoolAddress,
+    //   abi: v3PoolAbi,
+    //   functionName: 'slot0',
+    //   // args: [],
+    // })
+    
+    const response = await viemChainClient.multicall({
+      contracts: Array(20).fill({
+        address: v3PoolAddress,
+        abi: v3PoolAbi,
+        functionName: 'slot0',
+        // args: [],
+      })
+    })
+    response.forEach(r => {
+      if (r.result) {
+        const [sqrtPriceX96, tick, , , , feeProtocol] = r.result as any
+        console.warn({
+          sqrtPriceX96,
+          tick,
+          feeProtocol,
+        })
+      }
+
+    })
+  }, [v3PoolAddress])
+
   return (
     <div className="App">
       <header className="App-header">
@@ -565,6 +644,10 @@ function Main() {
         </p>
         <p>
           <button onClick={swap2}>swap2</button>
+        </p>
+        <p>
+          <input value={v3PoolAddress} onChange={handleV3PoolAddressChange} style={{"width": 400}}></input>
+          <button onClick={fetchV3PoolInfo}>fetch v3 pool info</button>
         </p>
       </header>
     </div>
