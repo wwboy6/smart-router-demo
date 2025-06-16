@@ -1,12 +1,12 @@
 import { Native, ERC20Token, ChainId, CurrencyAmount, TradeType, Percent, Currency } from '@pancakeswap/sdk'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { SmartRouter, SmartRouterTrade, SMART_ROUTER_ADDRESSES, SwapRouter } from '@pancakeswap/smart-router'
+import { SmartRouter, SmartRouterTrade, SMART_ROUTER_ADDRESSES, SwapRouter, Transformer } from '@pancakeswap/smart-router'
 import { bscTokens } from '@pancakeswap/tokens'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createConfig } from 'wagmi'
 import { bsc } from 'viem/chains'
 
-import { defineChain, hexToBigInt, http, createWalletClient, BaseError, ContractFunctionRevertedError, Chain, Hex, createPublicClient } from 'viem'
+import { defineChain, hexToBigInt, http, createWalletClient, BaseError, ContractFunctionRevertedError, Chain, Hex, createPublicClient, getAddress, getAddress } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts';
 import { GraphQLClient } from 'graphql-request'
 
@@ -18,11 +18,16 @@ import { PRIVATE_KEY } from './secret'
 import './App.css'
 // import { toSerializable } from './util'
 ;
-import { printAmount, printBalance, toSerializable } from './util';
+import { printAmount, printBalance } from './util';
 
 import FlashLoadSmartRouterInfo from './contract/FlashLoadSmartRouter.json'
 import { v3PoolAbi } from '@pancakeswap/v3-sdk'
 import { limitedHttp } from './util/http2'
+
+// query from exchange-v3-bsc Hv1GncLY5docZoGtXjo4kwbTvxm3MAhVZqBZE4sUT9eZ
+// multiple result from query {token0: wbnb}
+// 1 result from query {token0: busd}
+// multiple result from query {token1: busd}
 
 const FlashLoadSmartRouterAddress = "0xeed8260f27BdbBD8e79761541C63a1D82A33518c"
 
@@ -141,10 +146,10 @@ export const config = createConfig({
 const v2SubgraphClient = new GraphQLClient('https://proxy-worker-api.pancakeswap.com/bsc-exchange')
 const v3SubgraphClient = new GraphQLClient('https://api.thegraph.com/subgraphs/name/pancakeswap/exchange-v3-bsc')
 
-// const quoteProvider = SmartRouter.createQuoteProvider({
-//   onChainProvider: () => viemChainClient,
-// })
-const quoteProvider = SmartRouter.createOffChainQuoteProvider()
+const quoteProvider = SmartRouter.createQuoteProvider({
+  onChainProvider: () => viemChainClient,
+})
+// const quoteProvider = SmartRouter.createOffChainQuoteProvider()
 
 async function getSwapPools(swapFrom : Currency, swapTo : Currency) { // TODO: return type
   // let swapPools = getPools(swapFrom.symbol, swapTo.symbol)
@@ -169,6 +174,7 @@ async function getSwapPools(swapFrom : Currency, swapTo : Currency) { // TODO: r
     //   v2p,
     //   v3p,
     // ])
+
     // const v2Pools = await SmartRouter.getV2CandidatePools({
     //   onChainProvider: () => viemChainClient,
     //   v2SubgraphProvider: () => v2SubgraphClient,
@@ -177,17 +183,59 @@ async function getSwapPools(swapFrom : Currency, swapTo : Currency) { // TODO: r
     //   currencyB: swapTo,
     // })
     // debugger
-    const v3Pools = await SmartRouter.getV3CandidatePools({
-      onChainProvider: () => viemChainClient,
-      subgraphProvider: () => v3SubgraphClient,
-      currencyA: swapFrom,
-      currencyB: swapTo,
-      subgraphFallback: false,
+    // const v3Pools = await SmartRouter.getV3CandidatePools({
+    //   onChainProvider: () => viemChainClient,
+    //   subgraphProvider: () => v3SubgraphClient,
+    //   currencyA: swapFrom,
+    //   currencyB: swapTo,
+    //   subgraphFallback: false,
+    // })
+
+
+    // // TODO: take cache in redis
+    // const data: SmartRouter.Transformer.SerializedPool[] = require('./pools-wbnb-busd2.json')
+    // const v3Pools = data.map(d => Transformer.parsePool(chain.id, d))
+
+    // // swapPools = [...v2Pools, ...v3Pools]
+    // swapPools = v3Pools
+
+
+    // const sp = swapPools.map(Transformer.serializePool)
+    // const swapPoolsStr2 = JSON.stringify(sp)
+    // console.log(swapPoolsStr2)
+    
+    let data = require('./pools-raw-wbnb-busd.json')
+    data = Object.values(data.data).flat().map((d: any) => {
+      return {
+        type: 1,
+        token0: {
+          ...d.token0,
+          address: getAddress(d.token0.address),
+          decimals: Number(d.token0.decimals),
+        },
+        token1: {
+          ...d.token1,
+          address: getAddress(d.token1.address),
+          decimals: Number(d.token1.decimals),
+        },
+        address: getAddress(d.address),
+        fee: Number(d.fee), // FIXME:
+        // TODO: check if these are optional
+        liquidity: 0,
+        sqrtRatioX96: 0,
+        token0ProtocolFee: 0,
+        token1ProtocolFee: 0,
+      }
     })
-    // swapPools = [...v2Pools, ...v3Pools]
-    swapPools = v3Pools
-    console.log(swapPools)
-    console.log(JSON.stringify(toSerializable(swapPools))) // TODO: use library instead
+    console.log(data.length)
+    // remove duplication
+    const addresses: Set<string> = new Set(data.map((d: any) => d.address))
+    data = [...addresses].map(addr => data.find((d: any) => d.address === addr))
+    console.log(data.length)
+    //
+    console.log(JSON.stringify(data))
+    throw new Error('test')
+
   }
   return swapPools
 }
@@ -287,6 +335,7 @@ function Main() {
         gasPriceWei,
         maxHops: 2,
         maxSplits: 2,
+        distributionPercent: 100,
         poolProvider: SmartRouter.createStaticPoolProvider(swapPools),
         quoteProvider,
         quoterOptimization: true,
@@ -338,6 +387,7 @@ function Main() {
       gasPriceWei,
       maxHops: 2,
       maxSplits: 2,
+      distributionPercent: 100,
       poolProvider: SmartRouter.createStaticPoolProvider(swapPools),
       quoteProvider,
       quoterOptimization: true,
@@ -360,6 +410,7 @@ function Main() {
         gasPriceWei,
         maxHops: 2,
         maxSplits: 2,
+        distributionPercent: 100,
         poolProvider: SmartRouter.createStaticPoolProvider(swapPools2),
         quoteProvider,
         quoterOptimization: true,

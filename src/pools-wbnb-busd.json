@@ -1,0 +1,686 @@
+[
+  {
+    "type": 1,
+    "token0": {
+      "address": "0x55d398326f99059fF775485246999027B3197955",
+      "decimals": 18,
+      "symbol": "USDT"
+    },
+    "token1": {
+      "address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+      "decimals": 18,
+      "symbol": "WBNB"
+    },
+    "reserve0": {
+      "currency": {
+        "address": "0x55d398326f99059fF775485246999027B3197955",
+        "decimals": 18,
+        "symbol": "USDT"
+      },
+      "value": "45937332318157453865962384"
+    },
+    "reserve1": {
+      "currency": {
+        "address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+        "decimals": 18,
+        "symbol": "WBNB"
+      },
+      "value": "14754845172046011387944"
+    },
+    "fee": 500,
+    "liquidity": "7561367637212049380178682",
+    "sqrtRatioX96": "3089131324375828860405412189",
+    "tick": -64893,
+    "address": "0x36696169C63e42cd08ce11f5deeBbCeBae652050",
+    "token0ProtocolFee": "34",
+    "token1ProtocolFee": "34"
+  },
+  {
+    "type": 1,
+    "token0": {
+      "address": "0x55d398326f99059fF775485246999027B3197955",
+      "decimals": 18,
+      "symbol": "USDT"
+    },
+    "token1": {
+      "address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+      "decimals": 18,
+      "symbol": "WBNB"
+    },
+    "reserve0": {
+      "currency": {
+        "address": "0x55d398326f99059fF775485246999027B3197955",
+        "decimals": 18,
+        "symbol": "USDT"
+      },
+      "value": "9748837607981598011715837"
+    },
+    "reserve1": {
+      "currency": {
+        "address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+        "decimals": 18,
+        "symbol": "WBNB"
+      },
+      "value": "13552254061812318456079"
+    },
+    "fee": 100,
+    "liquidity": "18070941853100916358908015",
+    "sqrtRatioX96": "3089470670142744301090309805",
+    "tick": -64890,
+    "address": "0x172fcD41E0913e95784454622d1c3724f546f849",
+    "token0ProtocolFee": "33",
+    "token1ProtocolFee": "33"
+  },
+  {
+    "type": 1,
+    "token0": {
+      "address": "0x8d0D000Ee44948FC98c9B98A4FA4921476f08B0d",
+      "decimals": 18,
+      "symbol": "USD1"
+    },
+    "token1": {
+      "address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+      "decimals": 18,
+      "symbol": "WBNB"
+    },
+    "reserve0": {
+      "currency": {
+        "address": "0x8d0D000Ee44948FC98c9B98A4FA4921476f08B0d",
+        "decimals": 18,
+        "symbol": "USD1"
+      },
+      "value": "11332267527918260279674234"
+    },
+    "reserve1": {
+      "currency": {
+        "address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+        "decimals": 18,
+        "symbol": "WBNB"
+      },
+      "value": "1075673966368694458587"
+    },
+    "fee": 500,
+    "liquidity": "1156286581120853080327644",
+    "sqrtRatioX96": "3090514984599826681026203580",
+    "tick": -64884,
+    "address": "0x4a3218606AF9B4728a9F187E1c1a8c07fBC172a9",
+    "token0ProtocolFee": "34",
+    "token1ProtocolFee": "34"
+  },
+  {
+    "type": 1,
+    "token0": {
+      "address": "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
+      "decimals": 18,
+      "symbol": "BTCB"
+    },
+    "token1": {
+      "address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+      "decimals": 18,
+      "symbol": "WBNB"
+    },
+    "reserve0": {
+      "currency": {
+        "address": "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
+        "decimals": 18,
+        "symbol": "BTCB"
+      },
+      "value": "28235519812351885308"
+    },
+    "reserve1": {
+      "currency": {
+        "address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+        "decimals": 18,
+        "symbol": "WBNB"
+      },
+      "value": "13189244635806193316749"
+    },
+    "fee": 500,
+    "liquidity": "20506485663152415911131",
+    "sqrtRatioX96": "1013238950092833251465090256057",
+    "tick": 50974,
+    "address": "0x6bbc40579ad1BBD243895cA0ACB086BB6300d636",
+    "token0ProtocolFee": "34",
+    "token1ProtocolFee": "34"
+  },
+  {
+    "type": 1,
+    "token0": {
+      "address": "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+      "decimals": 18,
+      "symbol": "ETH"
+    },
+    "token1": {
+      "address": "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",
+      "decimals": 18,
+      "symbol": "BUSD"
+    },
+    "reserve0": {
+      "currency": {
+        "address": "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+        "decimals": 18,
+        "symbol": "ETH"
+      },
+      "value": "1754468868501"
+    },
+    "reserve1": {
+      "currency": {
+        "address": "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",
+        "decimals": 18,
+        "symbol": "BUSD"
+      },
+      "value": "6520145056770566"
+    },
+    "fee": 500,
+    "liquidity": "0",
+    "sqrtRatioX96": "4295128740",
+    "tick": -887272,
+    "address": "0x8a0D21A95768494F8AD482d2c537a2aa2f8dDeE7",
+    "token0ProtocolFee": "34",
+    "token1ProtocolFee": "34"
+  },
+  {
+    "type": 1,
+    "token0": {
+      "address": "0x55d398326f99059fF775485246999027B3197955",
+      "decimals": 18,
+      "symbol": "USDT"
+    },
+    "token1": {
+      "address": "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",
+      "decimals": 18,
+      "symbol": "BUSD"
+    },
+    "reserve0": {
+      "currency": {
+        "address": "0x55d398326f99059fF775485246999027B3197955",
+        "decimals": 18,
+        "symbol": "USDT"
+      },
+      "value": "133421767448971704470931"
+    },
+    "reserve1": {
+      "currency": {
+        "address": "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",
+        "decimals": 18,
+        "symbol": "BUSD"
+      },
+      "value": "1187612684482317433733936"
+    },
+    "fee": 100,
+    "liquidity": "1178400065438838272191305907",
+    "sqrtRatioX96": "79240337776972154297208688833",
+    "tick": 3,
+    "address": "0x4f3126d5DE26413AbDCF6948943FB9D0847d9818",
+    "token0ProtocolFee": "33",
+    "token1ProtocolFee": "33"
+  },
+  {
+    "type": 1,
+    "token0": {
+      "address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+      "decimals": 18,
+      "symbol": "WBNB"
+    },
+    "token1": {
+      "address": "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",
+      "decimals": 18,
+      "symbol": "BUSD"
+    },
+    "reserve0": {
+      "currency": {
+        "address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+        "decimals": 18,
+        "symbol": "WBNB"
+      },
+      "value": "97455217739463294377"
+    },
+    "reserve1": {
+      "currency": {
+        "address": "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",
+        "decimals": 18,
+        "symbol": "BUSD"
+      },
+      "value": "203126685274097715016743"
+    },
+    "fee": 500,
+    "liquidity": "18131501900562032251912",
+    "sqrtRatioX96": "2031940942125509884253497593162",
+    "tick": 64891,
+    "address": "0x85FAac652b707FDf6907EF726751087F9E0b6687",
+    "token0ProtocolFee": "34",
+    "token1ProtocolFee": "34"
+  },
+  {
+    "type": 1,
+    "token0": {
+      "address": "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
+      "decimals": 18,
+      "symbol": "USDC"
+    },
+    "token1": {
+      "address": "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",
+      "decimals": 18,
+      "symbol": "BUSD"
+    },
+    "reserve0": {
+      "currency": {
+        "address": "0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d",
+        "decimals": 18,
+        "symbol": "USDC"
+      },
+      "value": "35834155462323031683527"
+    },
+    "reserve1": {
+      "currency": {
+        "address": "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",
+        "decimals": 18,
+        "symbol": "BUSD"
+      },
+      "value": "120921870521315759399235"
+    },
+    "fee": 100,
+    "liquidity": "182836922974328252445882724",
+    "sqrtRatioX96": "79232483237936443876337010277",
+    "tick": 1,
+    "address": "0x22536030B9cE783B6Ddfb9a39ac7F439f568E5e6",
+    "token0ProtocolFee": "33",
+    "token1ProtocolFee": "33"
+  },
+  {
+    "type": 1,
+    "token0": {
+      "address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+      "decimals": 18,
+      "symbol": "WBNB"
+    },
+    "token1": {
+      "address": "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",
+      "decimals": 18,
+      "symbol": "BUSD"
+    },
+    "reserve0": {
+      "currency": {
+        "address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+        "decimals": 18,
+        "symbol": "WBNB"
+      },
+      "value": "29799790009073205670"
+    },
+    "reserve1": {
+      "currency": {
+        "address": "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",
+        "decimals": 18,
+        "symbol": "BUSD"
+      },
+      "value": "20583666876418299289770"
+    },
+    "fee": 100,
+    "liquidity": "30851406967439027379894",
+    "sqrtRatioX96": "2032378459785468118571400538593",
+    "tick": 64895,
+    "address": "0x8F45b99BF65CDBF9bC0C0b4846D6a324d2DE5314",
+    "token0ProtocolFee": "33",
+    "token1ProtocolFee": "33"
+  },
+  {
+    "type": 1,
+    "token0": {
+      "address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+      "decimals": 18,
+      "symbol": "WBNB"
+    },
+    "token1": {
+      "address": "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",
+      "decimals": 18,
+      "symbol": "BUSD"
+    },
+    "reserve0": {
+      "currency": {
+        "address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+        "decimals": 18,
+        "symbol": "WBNB"
+      },
+      "value": "3366856497355170602"
+    },
+    "reserve1": {
+      "currency": {
+        "address": "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",
+        "decimals": 18,
+        "symbol": "BUSD"
+      },
+      "value": "3263626822881740552801"
+    },
+    "fee": 2500,
+    "liquidity": "159936074537207366319",
+    "sqrtRatioX96": "2031677455672226269845902792900",
+    "tick": 64888,
+    "address": "0x1c79d6599A5ff35922b2AEd8D2A2eACbC77ebd44",
+    "token0ProtocolFee": "32",
+    "token1ProtocolFee": "32"
+  },
+  {
+    "type": 1,
+    "token0": {
+      "address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+      "decimals": 18,
+      "symbol": "WBNB"
+    },
+    "token1": {
+      "address": "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",
+      "decimals": 18,
+      "symbol": "BUSD"
+    },
+    "reserve0": {
+      "currency": {
+        "address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+        "decimals": 18,
+        "symbol": "WBNB"
+      },
+      "value": "1676484801480565672"
+    },
+    "reserve1": {
+      "currency": {
+        "address": "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",
+        "decimals": 18,
+        "symbol": "BUSD"
+      },
+      "value": "1733780929986957528552"
+    },
+    "fee": 10000,
+    "liquidity": "45563756950816367524",
+    "sqrtRatioX96": "2024485804548115937004304789546",
+    "tick": 64818,
+    "address": "0x469efaaadB06b5f4618ed1907ABa380411f9a200",
+    "token0ProtocolFee": "32",
+    "token1ProtocolFee": "32"
+  },
+  {
+    "type": 1,
+    "token0": {
+      "address": "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+      "decimals": 18,
+      "symbol": "ETH"
+    },
+    "token1": {
+      "address": "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
+      "decimals": 18,
+      "symbol": "BTCB"
+    },
+    "reserve0": {
+      "currency": {
+        "address": "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+        "decimals": 18,
+        "symbol": "ETH"
+      },
+      "value": "68380207559268"
+    },
+    "reserve1": {
+      "currency": {
+        "address": "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
+        "decimals": 18,
+        "symbol": "BTCB"
+      },
+      "value": "202261784420"
+    },
+    "fee": 10000,
+    "liquidity": "0",
+    "sqrtRatioX96": "14502529052354527819544578827",
+    "tick": -33962,
+    "address": "0x775eF0eD5aE3120e4C75fD67d1A9fAb31723e2c3",
+    "token0ProtocolFee": "32",
+    "token1ProtocolFee": "32"
+  },
+  {
+    "type": 1,
+    "token0": {
+      "address": "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82",
+      "decimals": 18,
+      "symbol": "CAKE"
+    },
+    "token1": {
+      "address": "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+      "decimals": 18,
+      "symbol": "ETH"
+    },
+    "reserve0": {
+      "currency": {
+        "address": "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82",
+        "decimals": 18,
+        "symbol": "CAKE"
+      },
+      "value": "17"
+    },
+    "reserve1": {
+      "currency": {
+        "address": "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+        "decimals": 18,
+        "symbol": "ETH"
+      },
+      "value": "16"
+    },
+    "fee": 10000,
+    "liquidity": "0",
+    "sqrtRatioX96": "4295128740",
+    "tick": -887272,
+    "address": "0xfC4B6939B1590151250Cf0aD72f6Ad22f395AEdC",
+    "token0ProtocolFee": "32",
+    "token1ProtocolFee": "32"
+  },
+  {
+    "type": 1,
+    "token0": {
+      "address": "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82",
+      "decimals": 18,
+      "symbol": "CAKE"
+    },
+    "token1": {
+      "address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+      "decimals": 18,
+      "symbol": "WBNB"
+    },
+    "reserve0": {
+      "currency": {
+        "address": "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82",
+        "decimals": 18,
+        "symbol": "CAKE"
+      },
+      "value": "2710558335953865462502906"
+    },
+    "reserve1": {
+      "currency": {
+        "address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+        "decimals": 18,
+        "symbol": "WBNB"
+      },
+      "value": "5307435830569792262266"
+    },
+    "fee": 2500,
+    "liquidity": "533890447216746759327923",
+    "sqrtRatioX96": "4772114486932142098827722579",
+    "tick": -56194,
+    "address": "0x133B3D95bAD5405d14d53473671200e9342896BF",
+    "token0ProtocolFee": "32",
+    "token1ProtocolFee": "32"
+  },
+  {
+    "type": 1,
+    "token0": {
+      "address": "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+      "decimals": 18,
+      "symbol": "ETH"
+    },
+    "token1": {
+      "address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+      "decimals": 18,
+      "symbol": "WBNB"
+    },
+    "reserve0": {
+      "currency": {
+        "address": "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+        "decimals": 18,
+        "symbol": "ETH"
+      },
+      "value": "1012263094906560896373"
+    },
+    "reserve1": {
+      "currency": {
+        "address": "0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c",
+        "decimals": 18,
+        "symbol": "WBNB"
+      },
+      "value": "3581735180910456605511"
+    },
+    "fee": 500,
+    "liquidity": "31301414454964434516850",
+    "sqrtRatioX96": "158733955081148071257309276121",
+    "tick": 13898,
+    "address": "0xD0e226f674bBf064f54aB47F42473fF80DB98CBA",
+    "token0ProtocolFee": "34",
+    "token1ProtocolFee": "34"
+  },
+  {
+    "type": 1,
+    "token0": {
+      "address": "0x16faF9DAa401AA42506AF503Aa3d80B871c467A3",
+      "decimals": 18,
+      "symbol": "DCK"
+    },
+    "token1": {
+      "address": "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",
+      "decimals": 18,
+      "symbol": "BUSD"
+    },
+    "reserve0": {
+      "currency": {
+        "address": "0x16faF9DAa401AA42506AF503Aa3d80B871c467A3",
+        "decimals": 18,
+        "symbol": "DCK"
+      },
+      "value": "12112732999872503934069896"
+    },
+    "reserve1": {
+      "currency": {
+        "address": "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",
+        "decimals": 18,
+        "symbol": "BUSD"
+      },
+      "value": "82069763394786170782065"
+    },
+    "fee": 2500,
+    "liquidity": "899595025523344815008883",
+    "sqrtRatioX96": "7088976096956960648977400206",
+    "tick": -48279,
+    "address": "0xD465D9C13C43003f5B874e0D96A6030336Ed50eB",
+    "token0ProtocolFee": "32",
+    "token1ProtocolFee": "32"
+  },
+  {
+    "type": 1,
+    "token0": {
+      "address": "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82",
+      "decimals": 18,
+      "symbol": "CAKE"
+    },
+    "token1": {
+      "address": "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",
+      "decimals": 18,
+      "symbol": "BUSD"
+    },
+    "reserve0": {
+      "currency": {
+        "address": "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82",
+        "decimals": 18,
+        "symbol": "CAKE"
+      },
+      "value": "27105563806083568994479"
+    },
+    "reserve1": {
+      "currency": {
+        "address": "0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56",
+        "decimals": 18,
+        "symbol": "BUSD"
+      },
+      "value": "63309176549320980077862"
+    },
+    "fee": 2500,
+    "liquidity": "100039810090066386050064",
+    "sqrtRatioX96": "122477483699624556360761979129",
+    "tick": 8712,
+    "address": "0x9f6EB6903C1277c8f02d71F8814dc9998199af1D",
+    "token0ProtocolFee": "32",
+    "token1ProtocolFee": "32"
+  },
+  {
+    "type": 1,
+    "token0": {
+      "address": "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82",
+      "decimals": 18,
+      "symbol": "CAKE"
+    },
+    "token1": {
+      "address": "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
+      "decimals": 18,
+      "symbol": "BTCB"
+    },
+    "reserve0": {
+      "currency": {
+        "address": "0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82",
+        "decimals": 18,
+        "symbol": "CAKE"
+      },
+      "value": "204691472856043915"
+    },
+    "reserve1": {
+      "currency": {
+        "address": "0x7130d2A12B9BCbFAe4f2634d864A1Ee1Ce3Ead9c",
+        "decimals": 18,
+        "symbol": "BTCB"
+      },
+      "value": "4882169435213"
+    },
+    "fee": 100,
+    "liquidity": "730915172899970",
+    "sqrtRatioX96": "373931444368549669826418965",
+    "tick": -107126,
+    "address": "0x86384E39FFb9384d42a2886b089f4DC518909daF",
+    "token0ProtocolFee": "33",
+    "token1ProtocolFee": "33"
+  },
+  {
+    "type": 1,
+    "token0": {
+      "address": "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+      "decimals": 18,
+      "symbol": "ETH"
+    },
+    "token1": {
+      "address": "0x55d398326f99059fF775485246999027B3197955",
+      "decimals": 18,
+      "symbol": "USDT"
+    },
+    "reserve0": {
+      "currency": {
+        "address": "0x2170Ed0880ac9A755fd29B2688956BD959F933F8",
+        "decimals": 18,
+        "symbol": "ETH"
+      },
+      "value": "192"
+    },
+    "reserve1": {
+      "currency": {
+        "address": "0x55d398326f99059fF775485246999027B3197955",
+        "decimals": 18,
+        "symbol": "USDT"
+      },
+      "value": "7415"
+    },
+    "fee": 10000,
+    "liquidity": "0",
+    "sqrtRatioX96": "4295128740",
+    "tick": -887272,
+    "address": "0x83c38557a0576Ad38dEf24abaFA17c2C218cb9E4",
+    "token0ProtocolFee": "32",
+    "token1ProtocolFee": "32"
+  }
+]
