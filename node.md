@@ -5,6 +5,10 @@
 ## Contract
 - usdt-wbnb 0x36696169c63e42cd08ce11f5deebbcebae652050
 
+## the graph
+- url base https://thegraph.com/explorer/subgraphs/
+- pancakeswap v3 A1fvJWQLBeUAggX2WQTMm3FKjXTekNXo77ZySun4YN2m
+
 ## params
 
 - quoterOptimization: get quote from quote provider before finding best route

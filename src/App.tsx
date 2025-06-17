@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createConfig } from 'wagmi'
 import { bsc } from 'viem/chains'
 
-import { defineChain, hexToBigInt, http, createWalletClient, BaseError, ContractFunctionRevertedError, Chain, Hex, createPublicClient, getAddress, getAddress } from 'viem'
+import { defineChain, hexToBigInt, http, createWalletClient, BaseError, ContractFunctionRevertedError, Chain, Hex, createPublicClient, getAddress } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts';
 import { GraphQLClient } from 'graphql-request'
 
@@ -22,7 +22,7 @@ import { printAmount, printBalance } from './util';
 
 import FlashLoadSmartRouterInfo from './contract/FlashLoadSmartRouter.json'
 import { v3PoolAbi } from '@pancakeswap/v3-sdk'
-import { limitedHttp } from './util/http2'
+import { throttledHttp } from './util/http2'
 
 // query from exchange-v3-bsc Hv1GncLY5docZoGtXjo4kwbTvxm3MAhVZqBZE4sUT9eZ
 // multiple result from query {token0: wbnb}
@@ -71,15 +71,9 @@ let chain : Chain;
 
 if (isLocal) {
   chain = defineChain({
-    // id: 31337,
-    id: 56,
+    ...bsc,
     name: 'Local Hardhat',
     network: 'hardhat',
-    nativeCurrency: {
-      decimals: 18,
-      name: 'Binance Coin',
-      symbol: 'BNB',
-    },
     rpcUrls: {
       default: {
         http: ['http://127.0.0.1:8545'],
@@ -88,47 +82,25 @@ if (isLocal) {
         http: ['http://127.0.0.1:8545'],
       },
     },
-    contracts: {
-      multicall3: { address: "0xcA11bde05977b3631167028862bE2a173976CA11" },
-    },
   });
 } else {
-  // chain = bsc;
-  chain = defineChain({
-    id: 56,
-    name: 'BNB Smart Chain',
-    nativeCurrency: {
-      decimals: 18,
-      name: 'BNB',
-      symbol: 'BNB',
-    },
-    rpcUrls: {
-      default: { http: ['https://56.rpc.thirdweb.com'] },
-      // default: { http: ['https://bsc-mainnet.infura.io/v3/05c1dbfaa33f43268f953de9e26bef0d'] },
-    },
-    blockExplorers: {
-      default: {
-        name: 'BscScan',
-        url: 'https://bscscan.com',
-        apiUrl: 'https://api.bscscan.com/api',
-      },
-    },
-    contracts: {
-      multicall3: {
-        address: '0xca11bde05977b3631167028862be2a173976ca11',
-        blockCreated: 15921452,
-      },
-    },
-  })
+  chain = bsc;
 }
 
 // Note: this client is hijacked
 const viemChainClient = createPublicClient({
   chain: chain,
-  transport: limitedHttp(chain.rpcUrls.default.http[0], {
-    retryCount: Infinity, // FIXME:
-    retryDelay: 5 * 1000,
-  }, 5), // TODO:
+  transport: throttledHttp(
+    chain.rpcUrls.default.http[0],
+    {
+      retryCount: Infinity, // FIXME:
+      retryDelay: 5 * 1000,
+    },
+    {
+      limit: 3,
+      interval: 1000
+    }
+  ), // TODO:
   batch: {
     multicall: {
       batchSize: 2**10, // TODO: determine optimal batch size
@@ -151,7 +123,7 @@ const quoteProvider = SmartRouter.createQuoteProvider({
 })
 // const quoteProvider = SmartRouter.createOffChainQuoteProvider()
 
-async function getSwapPools(swapFrom : Currency, swapTo : Currency) { // TODO: return type
+async function getSwapPools(swapFrom : Currency, swapTo : Currency) : Promise<any[]> { // TODO: return type
   // let swapPools = getPools(swapFrom.symbol, swapTo.symbol)
   let swapPools = null
   if (!swapPools) {
@@ -191,51 +163,16 @@ async function getSwapPools(swapFrom : Currency, swapTo : Currency) { // TODO: r
     //   subgraphFallback: false,
     // })
 
-
     // // TODO: take cache in redis
-    // const data: SmartRouter.Transformer.SerializedPool[] = require('./pools-wbnb-busd2.json')
-    // const v3Pools = data.map(d => Transformer.parsePool(chain.id, d))
+    const data: SmartRouter.Transformer.SerializedPool[] = require('./pools-wbnb-busd2.json')
+    const v3Pools = data.map(d => Transformer.parsePool(chain.id, d))
 
     // // swapPools = [...v2Pools, ...v3Pools]
-    // swapPools = v3Pools
-
+    swapPools = v3Pools
 
     // const sp = swapPools.map(Transformer.serializePool)
     // const swapPoolsStr2 = JSON.stringify(sp)
     // console.log(swapPoolsStr2)
-    
-    let data = require('./pools-raw-wbnb-busd.json')
-    data = Object.values(data.data).flat().map((d: any) => {
-      return {
-        type: 1,
-        token0: {
-          ...d.token0,
-          address: getAddress(d.token0.address),
-          decimals: Number(d.token0.decimals),
-        },
-        token1: {
-          ...d.token1,
-          address: getAddress(d.token1.address),
-          decimals: Number(d.token1.decimals),
-        },
-        address: getAddress(d.address),
-        fee: Number(d.fee), // FIXME:
-        // TODO: check if these are optional
-        liquidity: 0,
-        sqrtRatioX96: 0,
-        token0ProtocolFee: 0,
-        token1ProtocolFee: 0,
-      }
-    })
-    console.log(data.length)
-    // remove duplication
-    const addresses: Set<string> = new Set(data.map((d: any) => d.address))
-    data = [...addresses].map(addr => data.find((d: any) => d.address === addr))
-    console.log(data.length)
-    //
-    console.log(JSON.stringify(data))
-    throw new Error('test')
-
   }
   return swapPools
 }
@@ -672,6 +609,41 @@ function Main() {
     })
   }, [v3PoolAddress])
 
+  function processGraphData () {
+    let data = require('./pools-raw-wbnb-busd.json')
+    data = Object.values(data.data).flat().map((d: any) => {
+      return {
+        type: 1,
+        token0: {
+          ...d.token0,
+          address: getAddress(d.token0.address),
+          decimals: Number(d.token0.decimals),
+        },
+        token1: {
+          ...d.token1,
+          address: getAddress(d.token1.address),
+          decimals: Number(d.token1.decimals),
+        },
+        address: getAddress(d.address),
+        fee: Number(d.fee), // FIXME:
+        // TODO: check if these are optional
+        liquidity: 0,
+        sqrtRatioX96: 0,
+        token0ProtocolFee: 0,
+        token1ProtocolFee: 0,
+        // TODO: additional
+        tvlUSD: Number(d.tvlUSD),
+      }
+    })
+    console.log(data.length)
+    // remove duplication
+    const addresses: Set<string> = new Set(data.map((d: any) => d.address))
+    data = [...addresses].map(addr => data.find((d: any) => d.address === addr))
+    console.log(data.length)
+    //
+    console.log(JSON.stringify(data))
+  }
+
   return (
     <div className="App">
       <header className="App-header">
@@ -698,7 +670,8 @@ function Main() {
         </p>
         <p>
           <input value={v3PoolAddress} onChange={handleV3PoolAddressChange} style={{"width": 400}}></input>
-          <button onClick={fetchV3PoolInfo}>fetch v3 pool info</button>
+          <button onClick={fetchV3PoolInfo}>fetch v3 pool info</button><br/>
+          <button onClick={processGraphData}>Process Graph</button>
         </p>
       </header>
     </div>
